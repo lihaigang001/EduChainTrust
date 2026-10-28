@@ -1,0 +1,46 @@
+name: CI
+on: [push, pull_request]
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '${{ matrix.python-version }}'}
+      - run: python -m pip install -e ".[all]"
+      - run: python -m pytest -q -W error::ResourceWarning --cov=educhaintrust --cov=api --cov-fail-under=85
+      - run: python examples/university_demo.py
+      - run: python experiments/compare_verification.py
+      - run: python benchmark/run_benchmarks.py --n 10 --repeats 2 --out ci-benchmark.json
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install build -c benchmark/plot_constraints.txt
+      - run: python -m pip install -e ".[api,plot]" -c benchmark/plot_constraints.txt
+      - run: python -m build
+      - run: python -m pip install --no-deps dist/*.whl
+      - run: cd /tmp && python -c "from educhaintrust.credential.vc import VerifiableCredential; assert VerifiableCredential.CONTEXT"
+      - run: rm -rf build educhaintrust.egg-info
+      - run: sha256sum dist/*.whl > SHA256SUMS.txt
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install -e .
+      - run: python tools/generate_local_config.py --out-dir local-config --issuer CI-U > /dev/null
+      - run: echo "EDUCHAINTRUST_TRUSTED_CONFIG_UID=$(id -u)" >> "$GITHUB_ENV"
+      - run: docker compose up --build -d api
+      - run: python tools/docker_smoke.py
+      - if: always()
+        run: docker compose down -v
