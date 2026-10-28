@@ -1,0 +1,18 @@
+services:
+  api:
+    build: {context: ., dockerfile: docker/Dockerfile}
+    environment:
+      EDUCHAINTRUST_CONFIG: /run/educhaintrust/config.json
+      EDUCHAINTRUST_DB: /data/evidence.sqlite3
+      EDUCHAINTRUST_TRUSTED_CONFIG_UID: ${EDUCHAINTRUST_TRUSTED_CONFIG_UID:-0}
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./local-config:/run/educhaintrust:ro
+      - evidence-data:/data
+    ports: ["127.0.0.1:8000:8000"]
+  dashboard:
+    build: {context: ., dockerfile: docker/Dockerfile}
+    command: ["streamlit","run","dashboard/app.py","--server.address=0.0.0.0"]
+    ports: ["127.0.0.1:8501:8501"]
+volumes:
+  evidence-data:
