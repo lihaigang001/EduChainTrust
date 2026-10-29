@@ -1,5 +1,7 @@
 # EduChainTrust v1.12.0
 
+[![DOI](https://zenodo.org/badge/1437173226.svg)](https://doi.org/10.5281/zenodo.23750199)
+
 EduChainTrust is a Python **research prototype** for local educational credential evidence. It creates a VC Data Model 2.0-style dictionary, signs the credential and proof metadata with a project-specific Ed25519 profile, stores only a digest and issuer ID in SQLite, and evaluates structure, signature, trusted issuer key, issuer/anchor attribution, time validity, digest match, and revocation separately.
 
 The project-specific signature is **not** W3C Data Integrity conformance. `did:edu` has no registered method resolver. SQLite is not a blockchain. The authentication and key-file setup below is intended for local synthetic demonstrations, not public deployment or a real institution's credential authority. No selective disclosure or cross-implementation interoperability is claimed.
